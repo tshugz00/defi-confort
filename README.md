@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Défis Quotidiens - Application Next.js
 
-## Getting Started
+Application de défis quotidiens personnalisés pour sortir de sa zone de confort.
 
-First, run the development server:
+## 🚀 Technologies
 
+- **Next.js 15** avec App Router
+- **TypeScript**
+- **Tailwind CSS**
+- **shadcn/ui**
+- **Supabase** (Auth anonyme + Database)
+- **PWA Ready**
+
+## 📋 Prérequis
+
+- Node.js 18+
+- Compte Supabase
+
+## 🛠️ Installation
+
+1. Installer les dépendances :
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Configurer les variables d'environnement :
+```bash
+cp .env.local.example .env.local
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Puis remplir avec vos clés Supabase :
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Configurer la base de données Supabase :
+   - Créer un nouveau projet Supabase
+   - Exécuter le script SQL dans `supabase/schema.sql` dans l'éditeur SQL de Supabase
+   - Créer un bucket de stockage nommé `challenge-photos` pour les photos
 
-## Learn More
+4. Lancer le serveur de développement :
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Ouvrir [http://localhost:3000](http://localhost:3000) dans votre navigateur.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📱 Fonctionnalités
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### MVP (Phase 1)
+- ✅ Onboarding en 3 étapes (niveau de confort, domaine, vibe)
+- ✅ Défi quotidien personnalisé
+- ✅ Système de streak et progression
+- ✅ Calendrier visuel des 14 derniers jours
+- ✅ Mini-journal après complétion
+- ✅ Statistiques (taux de complétion, meilleur streak, etc.)
+- ✅ Profil et paramètres
+- ✅ Notifications (configuration)
 
-## Deploy on Vercel
+### Structure du projet
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+├── app/                    # Pages Next.js App Router
+│   ├── api/               # API Routes
+│   ├── home/              # Page principale
+│   ├── onboarding/        # Onboarding
+│   ├── profile/           # Profil utilisateur
+│   └── settings/          # Paramètres
+├── components/            # Composants React
+│   ├── ui/                # Composants shadcn/ui
+│   ├── onboarding/        # Composants onboarding
+│   ├── challenge/         # Composants défis
+│   └── streak/            # Composants streak
+├── lib/                   # Utilitaires
+│   ├── supabase/          # Client Supabase
+│   └── utils/             # Helpers
+├── types/                 # Types TypeScript
+└── supabase/              # Schéma SQL
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🗄️ Base de données
+
+Le schéma Supabase inclut :
+- `users` - Profils utilisateurs
+- `challenges` - Catalogue de défis
+- `daily_challenges` - Défis assignés par jour
+- `challenge_logs` - Journal des complétions
+- `streaks` - Statistiques de streak
+
+## 🔐 Authentification
+
+L'application utilise l'authentification anonyme de Supabase. Chaque utilisateur obtient un ID unique sans nécessiter d'email ou mot de passe.
+
+## 📝 Notes
+
+- Les défis sont générés dynamiquement selon le niveau de confort, le domaine et la progression
+- Le streak est calculé automatiquement à chaque complétion
+- Les photos sont stockées dans Supabase Storage
+
+## 🚧 À venir (Phase 2)
+
+- Archive complète des défis passés
+- Citations motivantes
+- Système de badges
+- Mode sombre
+- Widget iOS/Android
+

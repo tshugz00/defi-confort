@@ -17,29 +17,6 @@ export async function getUser(userId: string): Promise<User | null> {
   return data as User
 }
 
-export async function createUser(userId: string, preferences: {
-  comfort_level: number
-  focus_domain: string
-  current_vibe?: string
-}): Promise<User | null> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('users')
-    .insert({
-      id: userId,
-      comfort_level: preferences.comfort_level,
-      focus_domain: preferences.focus_domain,
-      current_vibe: preferences.current_vibe || null,
-      notification_time: '09:00',
-      notifications_enabled: true,
-    })
-    .select()
-    .single()
-
-  if (error || !data) return null
-  return data as User
-}
-
 export async function updateUserPreferences(
   userId: string,
   preferences: Partial<{

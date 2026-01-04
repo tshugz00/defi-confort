@@ -1,61 +1,59 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { getUser, getDailyChallenge, getAllChallenges, createDailyChallenge } from "@/lib/supabase/queries"
-import { getTodayDateString } from "@/lib/utils/dateHelpers"
-import { generateDailyChallenge } from "@/lib/utils/challengeGenerator"
-import { getDailyChallengesHistory } from "@/lib/supabase/queries"
-import { calculateStreak } from "@/lib/utils/streakCalculator"
-import HomeClient from "./HomeClient"
+"use client"
 
-export default async function HomePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
-  if (!user) {
-    redirect("/onboarding")
-  }
+export default function HomePage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
-  const userProfile = await getUser(user.id)
-  if (!userProfile) {
-    redirect("/onboarding")
-  }
-
-  // Get or create today's challenge
-  let dailyChallenge = await getDailyChallenge(user.id)
-  const today = getTodayDateString()
-
-  if (!dailyChallenge) {
-    // Generate new challenge
-    const allChallenges = await getAllChallenges()
-    const history = await getDailyChallengesHistory(user.id, 30)
-    const previousIds = history.map(dc => dc.challenge_id)
-
-    const challenge = generateDailyChallenge(
-      {
-        comfortLevel: userProfile.comfort_level,
-        focusDomain: userProfile.focus_domain,
-        currentVibe: userProfile.current_vibe,
-        dayNumber: history.filter(dc => dc.status === 'completed').length + 1,
-        previousChallengeIds: previousIds,
-      },
-      allChallenges
-    )
-
-    if (challenge) {
-      dailyChallenge = await createDailyChallenge(user.id, challenge.id, today)
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        router.push("/onboarding")
+        return
+      }
+      
+      setUser(user)
+      setLoading(false)
     }
-  }
+    
+    checkUser()
+  }, [router])
 
-  // Get history for streak calculation
-  const history = await getDailyChallengesHistory(user.id, 14)
-  const streakData = calculateStreak(history)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Chargement...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <HomeClient
-      dailyChallenge={dailyChallenge}
-      streak={streakData}
-      history={history}
-    />
+    <div className="min-h-screen p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bienvenue !</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Votre défi quotidien apparaîtra ici.</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              L'application est en cours de développement.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
 

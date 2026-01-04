@@ -2,24 +2,39 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ComfortSlider } from "@/components/onboarding/ComfortSlider"
-import { DomainSelector } from "@/components/onboarding/DomainSelector"
-import { VibeSelector } from "@/components/onboarding/VibeSelector"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChallengeDomain, Vibe } from "@/types/challenge.types"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Slider } from "@/components/ui/slider"
+import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+
+const objectives = [
+  { id: "social", label: "Social / oser parler aux gens" },
+  { id: "confidence", label: "Confiance en soi / vulnérabilité" },
+  { id: "novelty", label: "Nouvelles expériences / nouveauté" },
+  { id: "procrastination", label: "Procrastination / trucs repoussés" },
+  { id: "physical", label: "Corps / physique" },
+]
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1)
-  const [comfortLevel, setComfortLevel] = useState(5)
-  const [selectedDomain, setSelectedDomain] = useState<ChallengeDomain | undefined>()
-  const [selectedVibe, setSelectedVibe] = useState<Vibe | undefined>()
+  const [sliderValue, setSliderValue] = useState([5])
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
-  const handleComplete = async () => {
-    if (!selectedDomain) return
+  const handleCheckboxChange = (objectiveId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedObjectives([...selectedObjectives, objectiveId])
+    } else {
+      setSelectedObjectives(selectedObjectives.filter((id) => id !== objectiveId))
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (selectedObjectives.length === 0) {
+      alert("Veuillez sélectionner au moins un objectif")
+      return
+    }
 
     setLoading(true)
     try {
@@ -29,100 +44,121 @@ export default function OnboardingPage() {
       const { data: { user }, error: authError } = await supabase.auth.signInAnonymously()
       
       if (authError || !user) {
-        console.error('Auth error:', authError)
+        console.error("Auth error:", authError)
+        alert("Erreur lors de la connexion. Veuillez réessayer.")
         return
       }
 
+      // Use the first selected objective as the primary focus domain
+      const focusDomain = selectedObjectives[0]
+
       // Create user profile
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
+      const { error: profileError } = await supabase
+        .from("users")
         .insert({
           id: user.id,
-          comfort_level: comfortLevel,
-          focus_domain: selectedDomain,
-          current_vibe: selectedVibe || null,
-          notification_time: '09:00',
+          comfort_level: sliderValue[0],
+          focus_domain: focusDomain,
+          notification_time: "09:00",
           notifications_enabled: true,
         })
-        .select()
-        .single()
 
-      if (!profileError && userProfile) {
-        router.push('/home')
+      if (profileError) {
+        console.error("Profile error:", profileError)
+        alert("Erreur lors de la création du profil. Veuillez réessayer.")
+        return
       }
+
+      router.push("/home")
     } catch (error) {
-      console.error('Error during onboarding:', error)
+      console.error("Error:", error)
+      alert("Une erreur est survenue. Veuillez réessayer.")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            {step === 1 && "Quel est ton niveau de confort ?"}
-            {step === 2 && "Quel domaine t'intéresse ?"}
-            {step === 3 && "Quelle est ta vibe du moment ?"}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {step === 1 && "Glisse pour ajuster ton niveau"}
-            {step === 2 && "Choisis un domaine principal"}
-            {step === 3 && "Optionnel - Skip si tu veux"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {step === 1 && (
-            <ComfortSlider value={comfortLevel} onChange={setComfortLevel} />
-          )}
-          
-          {step === 2 && (
-            <DomainSelector
-              selectedDomain={selectedDomain}
-              onSelect={setSelectedDomain}
-            />
-          )}
-          
-          {step === 3 && (
-            <VibeSelector
-              selectedVibe={selectedVibe}
-              onSelect={setSelectedVibe}
-              onSkip={() => setSelectedVibe(undefined)}
-            />
-          )}
-
-          <div className="flex gap-2">
-            {step > 1 && (
-              <Button
-                variant="outline"
-                onClick={() => setStep(step - 1)}
-                className="flex-1"
-              >
-                Précédent
-              </Button>
-            )}
-            {step < 3 ? (
-              <Button
-                onClick={() => setStep(step + 1)}
-                disabled={step === 2 && !selectedDomain}
-                className="flex-1"
-              >
-                Suivant
-              </Button>
-            ) : (
-              <Button
-                onClick={handleComplete}
-                disabled={loading || !selectedDomain}
-                className="flex-1"
-              >
-                {loading ? "Création..." : "Commencer"}
-              </Button>
-            )}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="space-y-3 text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-balance">Bienvenue</h1>
+            <p className="text-lg text-muted-foreground text-pretty">
+              Personnalisez votre expérience en quelques étapes simples
+            </p>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Slider Section */}
+          <div className="space-y-6 rounded-xl border border-border bg-card p-8">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="experience-slider" className="text-base font-medium">
+                  Niveau d'expérience
+                </Label>
+                <span className="text-3xl font-bold tabular-nums">{sliderValue[0]}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Évaluez votre niveau actuel sur une échelle de 1 à 10</p>
+            </div>
+
+            <div className="pt-4 pb-2">
+              <Slider
+                id="experience-slider"
+                min={1}
+                max={10}
+                step={1}
+                value={sliderValue}
+                onValueChange={setSliderValue}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-3">
+                <span>Débutant</span>
+                <span>Expert</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Objectives Section */}
+          <div className="space-y-6 rounded-xl border border-border bg-card p-8">
+            <div className="space-y-2">
+              <Label className="text-base font-medium">Vos objectifs</Label>
+              <p className="text-sm text-muted-foreground">Sélectionnez les objectifs qui vous correspondent</p>
+            </div>
+
+            <div className="space-y-4">
+              {objectives.map((objective) => (
+                <div
+                  key={objective.id}
+                  className="flex items-center space-x-3 rounded-lg border border-border/50 p-4 transition-colors hover:bg-accent/50"
+                >
+                  <Checkbox
+                    id={objective.id}
+                    checked={selectedObjectives.includes(objective.id)}
+                    onCheckedChange={(checked) => handleCheckboxChange(objective.id, checked as boolean)}
+                  />
+                  <Label
+                    htmlFor={objective.id}
+                    className="flex-1 cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {objective.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button 
+            onClick={handleSubmit} 
+            size="lg" 
+            className="w-full h-12 text-base font-medium"
+            disabled={loading || selectedObjectives.length === 0}
+          >
+            {loading ? "Chargement..." : "Valider et continuer"}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
-
